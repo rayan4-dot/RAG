@@ -19,7 +19,7 @@ app = FastAPI(title="RAG API", description="Retrieval-Augmented Generation API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -45,12 +45,12 @@ async def upload_document(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
 
 @app.post("/query", response_model=QueryResponse)
-def query_document(request: QueryRequest):
+async def query_document(request: QueryRequest):
     if not os.getenv("GOOGLE_API_KEY"):
         raise HTTPException(status_code=500, detail="GOOGLE_API_KEY is not set")
         
     try:
-        result = query_rag(request.query)
+        result = await query_rag(request.query)
         return QueryResponse(
             answer=result["answer"],
             source_documents=result["source_documents"]

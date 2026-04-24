@@ -80,6 +80,7 @@ export function ChatInterface() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let finished = false;
+      let buffer = '';
       let accumulatedContent = '';
 
       while (!finished) {
@@ -89,12 +90,15 @@ export function ChatInterface() {
           break;
         }
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        buffer += decoder.decode(value, { stream: true });
+        let boundary = buffer.indexOf('\n\n');
         
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const dataStr = line.replace('data: ', '').trim();
+        while (boundary !== -1) {
+          const chunkMessage = buffer.slice(0, boundary).trim();
+          buffer = buffer.slice(boundary + 2);
+          
+          if (chunkMessage.startsWith('data: ')) {
+            const dataStr = chunkMessage.replace('data: ', '').trim();
             
             if (dataStr === '[DONE]') {
               finished = true;
@@ -128,6 +132,8 @@ export function ChatInterface() {
               // Ignore empty or malformed JSON chunks
             }
           }
+          
+          boundary = buffer.indexOf('\n\n');
         }
       }
 
@@ -170,7 +176,7 @@ export function ChatInterface() {
 
               {msg.sources && msg.sources.length > 0 && (
                 <div className="sources-container">
-                  <span className="sources-label">Sources:</span>
+                  <span className="sources-label">Sources:</span> 
                   <ul className="sources-list">
                     {msg.sources.map((src, idx) => (
                       <li key={idx}>{src}</li>
